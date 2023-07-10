@@ -39,6 +39,9 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 	private readonly float enemySpacingH = 12;
 	private readonly float enemySpacingV = 12f;
 	private Vector2 startingPosition = new Vector2(-55, 170);
+	private readonly float enemyVerticalMovement = 5f;
+	private float direction = 1f;
+
 
 	//Shooting
 	public GameObject bulletPrefab;
@@ -105,7 +108,36 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 			SpawnBullet();
         }
 
+
+		//Enemy movement
 		GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+		foreach(GameObject e in enemies)
+        {
+			// Calculate the horizontal movement
+			float horizontalMovement = direction * enemyMoveSpeed * Time.deltaTime;
+
+
+			e.transform.Translate(horizontalMovement, 0f, 0f);
+			Vector3 clampedPosition = e.transform.position;
+			clampedPosition.x = Mathf.Clamp(clampedPosition.x, minX, maxX);
+			e.transform.position = clampedPosition;
+
+			if (e.transform.position.x == minX || e.transform.position.x == maxX)
+            {
+				foreach(GameObject e1 in enemies)
+                {
+					//Moving z moves the y??
+					e1.transform.transform.Translate(0f, 0f, -2f);
+				}
+				direction = -direction;
+				enemyMoveSpeed += 1f;
+			}
+
+
+		}
+		
+
+
 		if (enemies.Length == 0)
 		{
 			GameOver(score);
@@ -134,10 +166,22 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
         {
 			Destroy(object1);
 			Destroy(object2);
-
 			score += 10;
+        }
 
+		if(object1.CompareTag("Shield") && object2.CompareTag("Bullet"))
+        {
+			Destroy(object2);
+        }
 
+		if((object1.name == "Player") && (object2.CompareTag("Enemy")))
+		{
+			GameObject[] enenmies = GameObject.FindGameObjectsWithTag("Enemy");
+			foreach(GameObject e in enenmies)
+            {
+				Destroy(e);
+            }
+			GameOver(score);
         }
 	}
 
