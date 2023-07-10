@@ -1,4 +1,4 @@
 # Space-Invaders--Technical-Test-
 
 # Elapsed time
-2:10
+3:00
