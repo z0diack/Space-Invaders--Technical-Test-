@@ -1,7 +1,14 @@
-# Space-Invaders--Technical-Test-
+# Space Invaders (Technical Test)
+
+## Created by Jake Vardy
+
+### Controls
+* Left/Right arrow keys to move the ship
+* Space to shoot
+* R to restart when on the results page
 
 # Elapsed time
-7:15
+7:15 time spent on the project,
 
 # Future improvements
 * Random spawning UFO
