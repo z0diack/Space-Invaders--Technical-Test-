@@ -12,14 +12,12 @@ using System.Collections;
 
 public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvaders
 {
-
-
-
 	//Player variables
 	[Tooltip("Movement speed for the player")]
 	public float moveSpeed = 15f;
 	public float hInput;
 	private GameObject player;
+	private Vector3 playerStartPosition = Vector3.zero;
 	
 
 	//Boundaries
@@ -42,6 +40,11 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 	private readonly float enemyVerticalMovement = -5f;
 	private float direction = 1f;
 
+	public GameObject[] enemies;
+	public GameObject enemyBulletPrefab;
+	private readonly float enemyShootDelay = 0.8f;
+	private bool enemyCanShoot = true;
+	public float timer = 0f;
 
 	//Shooting
 	public GameObject bulletPrefab;
@@ -57,8 +60,10 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 	protected override void Awake()
 	{
 		base.Awake();
-		player = GameObject.Find("Player");
 
+		player = GameObject.Find("Player");
+		player.SetActive(true);
+		player.transform.position = playerStartPosition;
 		score = 0;
 
 		//Iterating the sheild spawning
@@ -137,6 +142,17 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 			}
 		}
 		scoreUI.text = score.ToString();
+		if (enemyCanShoot)
+		{
+			timer += Time.deltaTime;
+
+			if (timer >= enemyShootDelay)
+			{
+				ShootFromRandomEnemy();
+				timer = 0f;
+			}
+		}
+
 
 		if (enemies.Length == 0)
 		{
@@ -164,6 +180,28 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 		canShoot = true;
 	}
 
+	private void ShootFromRandomEnemy()
+	{
+		enemies = GameObject.FindGameObjectsWithTag("Enemy");
+		if (enemies.Length == 0)
+		{
+			Debug.LogWarning("No enemies in the array.");
+			return;
+		}
+
+		int randomIndex = Random.Range(0, enemies.Length);
+		GameObject randomEnemy = enemies[randomIndex];
+
+		Vector3 spawnPosition = randomEnemy.transform.position;
+
+		GameObject bullet = Instantiate(enemyBulletPrefab, spawnPosition, Quaternion.identity);
+		bullet.transform.rotation = enemyBulletPrefab.transform.rotation;
+
+		Rigidbody bulletRigidbody = bullet.GetComponent<Rigidbody>();
+		bulletRigidbody.velocity = Vector2.down * bulletSpeed;
+	}
+
+
 	private void SpawnBullet(float delay)
     {
 		StartCoroutine(SpawnBulletWithDelay(delay));
@@ -183,13 +221,21 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 			Destroy(object2);
         }
 
-		if((object1.name == "Player") && (object2.CompareTag("Enemy")))
+		if (object1.CompareTag("Shield") && object2.CompareTag("Enemy Bullet"))
+		{
+			Destroy(object1);
+			Destroy(object2);
+		}
+
+
+		if ((object1.name == "Player") && (object2.CompareTag("Enemy")))
 		{
 			GameObject[] enenmies = GameObject.FindGameObjectsWithTag("Enemy");
 			foreach(GameObject e in enenmies)
             {
 				Destroy(e);
             }
+			player.SetActive(false);
 			GameOver(score);
         }
 
@@ -200,8 +246,21 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 			{
 				Destroy(e);
 			}
+			player.SetActive(false);
 			GameOver(score);
 		}
+
+		if(object1.name == "Player" && object2.CompareTag("Enemy Bullet"))
+		{
+			GameObject[] enenmies = GameObject.FindGameObjectsWithTag("Enemy");
+			foreach (GameObject e in enenmies)
+			{
+				Destroy(e);
+			}
+			player.SetActive(false);
+			GameOver(score);
+		}
+
 	}
 
 	public void GameOver( int score )
