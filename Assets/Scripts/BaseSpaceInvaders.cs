@@ -28,8 +28,8 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 
 	//Sheild Variables
 	public GameObject shieldPrefab;
-	private float hStart = -46f;
-	private float spacingH = 30f;
+	private readonly float hStart = -46f;
+	private readonly float spacingH = 30f;
 
 	//Enemy Variables
 	public GameObject enemyPrefab;
@@ -39,17 +39,20 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 	private readonly float enemySpacingH = 12;
 	private readonly float enemySpacingV = 12f;
 	private Vector2 startingPosition = new Vector2(-55, 170);
-	private readonly float enemyVerticalMovement = 5f;
+	private readonly float enemyVerticalMovement = -5f;
 	private float direction = 1f;
 
 
 	//Shooting
 	public GameObject bulletPrefab;
-	private readonly float bulletSpeed = 25f;
+	private readonly float bulletSpeed = 100f;
+	private bool canShoot = true;
+	private readonly float bulletDelay = 1f;
 
 	//Game variables
 	public GameObject 		resultsScreen;
 	public int score;
+	public Text scoreUI;
 
 	protected override void Awake()
 	{
@@ -103,9 +106,9 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 		player.transform.position = newPosition;
 
 		//Need to add delay
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) && canShoot)
         {
-			SpawnBullet();
+			SpawnBullet(bulletDelay);
         }
 
 
@@ -127,16 +130,13 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 				foreach(GameObject e1 in enemies)
                 {
 					//Moving z moves the y??
-					e1.transform.transform.Translate(0f, 0f, -2f);
+					e1.transform.transform.Translate(0f, 0f, enemyVerticalMovement);
 				}
 				direction = -direction;
 				enemyMoveSpeed += 1f;
 			}
-
-
 		}
-		
-
+		scoreUI.text = score.ToString();
 
 		if (enemies.Length == 0)
 		{
@@ -144,8 +144,9 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 		}
 	}
 
-	private void SpawnBullet()
+	private IEnumerator SpawnBulletWithDelay(float delay)
 	{
+		canShoot = false;
 		// Calculate the spawn position in front of the player
 		Vector3 spawnPosition = player.transform.position + new Vector3(0f, 7.5f, 0f);
 
@@ -158,7 +159,15 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
 		// Apply upward velocity to the bullet
 		Rigidbody bulletRigidbody = bullet.GetComponent<Rigidbody>();
 		bulletRigidbody.velocity = Vector2.up * bulletSpeed;
+
+		yield return new WaitForSeconds(delay);
+		canShoot = true;
 	}
+
+	private void SpawnBullet(float delay)
+    {
+		StartCoroutine(SpawnBulletWithDelay(delay));
+    }
 
 	public void HandleHit( GameObject object1 , GameObject object2 )
 	{
@@ -183,6 +192,16 @@ public class BaseSpaceInvaders : MonoSingleton<BaseSpaceInvaders>, ISpaceInvader
             }
 			GameOver(score);
         }
+
+		if((object1.name == "End Trigger" && object2.CompareTag("Enemy")))
+        {
+			GameObject[] enenmies = GameObject.FindGameObjectsWithTag("Enemy");
+			foreach (GameObject e in enenmies)
+			{
+				Destroy(e);
+			}
+			GameOver(score);
+		}
 	}
 
 	public void GameOver( int score )
